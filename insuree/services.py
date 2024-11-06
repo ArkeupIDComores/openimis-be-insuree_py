@@ -359,7 +359,7 @@ class InsureeService:
     def _create_or_update(self, insuree, photo_data=None):
         if not InsureeConfig.custom_chif_id:
             if not insuree.chf_id:
-                raise Exception ("config.no_chfid")
+                raise ValidationError(_("config.no_chfid"))
         validate_insuree(insuree)
         if insuree.id:
             filters = Q(id=insuree.id)
