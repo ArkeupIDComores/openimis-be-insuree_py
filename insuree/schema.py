@@ -99,7 +99,9 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
         client_mutation_id=graphene.String(),
         orderBy=graphene.List(of_type=graphene.String),
         additional_filter=graphene.JSONString(),
-        officer=graphene.String()
+        officer=graphene.String(),
+        is_subfamily=graphene.Boolean()
+
     )
     family_members = OrderedDjangoFilterConnectionField(
         InsureeGQLType,
@@ -251,6 +253,15 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
                 sender=self, additional_filter=additional_filter, user=info.context.user
             )
             filters.extend(filters_from_signal)
+
+        is_subfamily = kwargs.get('is_subfamily', None)
+        if is_subfamily is not None:
+            if is_subfamily:
+                filters.append(Q(parent_id__isnull=False))
+                
+        family_type = kwargs.get('family_type', None)
+        if family_type is not None:
+            filters.append(Q(family_type__code=family_type))
 
         officer = kwargs.get('officer', None)
         if officer:
