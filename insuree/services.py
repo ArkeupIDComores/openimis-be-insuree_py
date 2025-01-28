@@ -172,9 +172,23 @@ def handle_insuree_photo(user, now, insuree, data):
     data['audit_user_id'] = user.id_for_audit
     data['validity_from'] = now
     data['insuree_id'] = insuree.id
-    if 'uuid' not in data or (existing_insuree_photo and data['uuid'] == existing_insuree_photo.uuid):
-        data['uuid'] = str(uuid.uuid4())
     photo_bin = data.get('photo', None)
+    # no photo changes
+    if (
+        'uuid' in data and existing_insuree_photo and
+        uuid.UUID(data['uuid']) == uuid.UUID(existing_insuree_photo.uuid)
+    ):
+        existing_insuree_photo_bin = load_photo_file(
+            existing_insuree_photo.folder,
+            existing_insuree_photo.filename
+        )
+        if photo_bin == existing_insuree_photo_bin: 
+            return existing_insuree_photo
+        else:
+            # we ignore the uuid, FE must have messup
+            data['uuid'] = str(uuid.uuid4())
+    if 'uuid' not in data:
+        data['uuid'] = str(uuid.uuid4())
     if photo_bin and InsureeConfig.insuree_photos_root_path \
             and (existing_insuree_photo is None or existing_insuree_photo.photo != photo_bin):
         (file_dir, file_name) = create_file(now, insuree.id, photo_bin, data['uuid'])
@@ -222,7 +236,7 @@ def create_file(date, insuree_id, photo_bin, name):
     file_name = name
 
     _create_dir(file_dir)
-    with open(_photo_dir(file_dir, file_name), "xb") as f:
+    with open(_photo_dir(file_dir, file_name), "wb") as f:
         f.write(base64.b64decode(photo_bin))
         f.close()
     return file_dir, file_name
@@ -294,6 +308,7 @@ class InsureeService:
         now = datetime.datetime.now()
         data['audit_user_id'] = self.user.id_for_audit
         data['validity_from'] = now
+        insuree = None
         status = data.get('status', InsureeStatus.ACTIVE)
         if status not in [choice[0] for choice in InsureeStatus.choices]:
             raise ValidationError(_("mutation.insuree.wrong_status"))
@@ -319,7 +334,7 @@ class InsureeService:
                         random_num = random.randint(min_num, max_num)
                         formatted_num = str(random_num).zfill(5)
                         data["chf_id"] = data["passport"] + str(formatted_num)
-                insuree = Insuree.objects.create(**data)
+                # insuree = Insuree.objects.create(**data)
             self.activate_policies_of_insuree(insuree, audit_user_id=data['audit_user_id'])
         if "uuid" not in data:
             if InsureeConfig.custom_chif_id:
@@ -333,7 +348,10 @@ class InsureeService:
         if InsureeConfig.insuree_fsp_mandatory and 'health_facility_id' not in data:
             raise ValidationError("mutation.insuree.fsp_required")
 
-        insuree = Insuree(**data)
+        if not insuree:
+            insuree = Insuree(**data)
+        else:
+            self._update(insuree, data)
         return self._create_or_update(insuree, photo_data)
 
     def disable_policies_of_insuree(self, insuree, status_date):
@@ -426,6 +444,13 @@ class InsureeService:
                     'detail': insuree.uuid}]
             }
 
+    def _update(self, insuree, data):
+        insuree.save_history()
+        # reset the non required fields
+        # (each update is 'complete', necessary to be able to set 'null')
+        reset_insuree_before_update(insuree)
+        [setattr(insuree, key, data[key]) for key in data]
+    
     def cancel_policies(self, insuree):
         try:
             from core import datetime
