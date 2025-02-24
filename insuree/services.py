@@ -500,17 +500,20 @@ class FamilyService:
 
     def create_or_update(self, data):
         head_insuree_data = data.pop('head_insuree', None)
+        family = None
         
         if head_insuree_data:
             head_insuree_data["head"] = True
-            if InsureeConfig.custom_chif_id:
-                min_num = 1
-                max_num = 99999
-                formatted_num = 0
-                while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
-                    random_num = random.randint(min_num, max_num)
-                    formatted_num = str(random_num).zfill(5)
-                    head_insuree_data["chf_id"] = str(head_insuree_data["passport"]) + str(formatted_num)
+            family = Family.objects.filter(uuid=data["uuid"]).first()
+            if not family:
+                if InsureeConfig.custom_chif_id:
+                    min_num = 1
+                    max_num = 99999
+                    formatted_num = 0
+                    while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
+                        random_num = random.randint(min_num, max_num)
+                        formatted_num = str(random_num).zfill(5)
+                        head_insuree_data["chf_id"] = str(head_insuree_data["passport"]) + str(formatted_num)
             head_insuree = InsureeService(
                 self.user).create_or_update(head_insuree_data)
             data["head_insuree_id"] = head_insuree.id
