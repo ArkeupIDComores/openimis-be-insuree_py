@@ -13,7 +13,7 @@ from django.utils.translation import gettext as _
 
 from core.signals import register_service_signal
 from insuree.apps import InsureeConfig
-from insuree.models import (InsureePhoto, PolicyRenewalDetail, Insuree, Family, InsureePolicy, InsureeStatus,
+from insuree.models import (InsureePhoto, InsureeAttachment, PolicyRenewalDetail, Insuree, Family, InsureePolicy, InsureeStatus,
                             InsureeStatusReason)
 from django.core.exceptions import ValidationError
 from core.models import filter_validity, resolved_id_reference
@@ -260,6 +260,16 @@ def load_photo_file(file_dir, file_name):
     except FileNotFoundError:
         logger.error(f"{photo_path} not found")
 
+def handle_insuree_attachments(user, now, insuree, data):
+    data['insuree_id'] = insuree.id
+    document_bin = data.get('document', None)
+    if document_bin and InsureeConfig.insuree_photos_root_path:
+        (file_dir, file_name) = create_file(now, insuree.id, document_bin, data['filename'])
+        data['folder'] = file_dir
+        data['filename'] = file_name
+    insuree_attachment = InsureeAttachment.objects.create(**data)
+    insuree_attachment.save()
+    return insuree_attachment
 
 def validate_insuree_data(insuree):
     if not insuree.dob:
@@ -304,6 +314,7 @@ class InsureeService:
     @register_service_signal('insuree_service.create_or_update')
     def create_or_update(self, data):
         photo_data = data.pop('photo', None)
+        attachements_data = data.pop('attachments', None)
         from core import datetime
         now = datetime.datetime.now()
         data['audit_user_id'] = self.user.id_for_audit
@@ -352,7 +363,7 @@ class InsureeService:
             insuree = Insuree(**data)
         else:
             self._update(insuree, data)
-        return self._create_or_update(insuree, photo_data)
+        return self._create_or_update(insuree, photo_data, attachements_data)
 
     def disable_policies_of_insuree(self, insuree, status_date):
         policies_to_cancel = InsureePolicy.objects.filter(insuree=insuree.id, validity_to__isnull=True).all()
@@ -374,11 +385,13 @@ class InsureeService:
                 current_policy = InsureePolicy(**current_policy_dict)
                 current_policy.save()
 
-    def _create_or_update(self, insuree, photo_data=None):
+    def _create_or_update(self, insuree, photo_data=None, attachements_data=None):
         if not InsureeConfig.custom_chif_id:
             if not insuree.chf_id:
                 raise ValidationError(_("config.no_chfid"))
         validate_insuree(insuree)
+        from core import datetime
+        now = datetime.datetime.now()
         if insuree.id:
             filters = Q(id=insuree.id)
             # remove it from now3 to avoid id at creation
@@ -411,6 +424,14 @@ class InsureeService:
                 insuree.photo = photo
                 insuree.photo_date = photo.date
                 insuree.save()
+        InsureeAttachment.objects.filter(
+            insuree_id=insuree.id
+        ).delete()
+        if attachements_data:
+            for attachment in attachements_data:
+                handle_insuree_attachments(
+                    self.user, now, insuree, attachment
+                )
         return insuree
 
     def remove(self, insuree):
