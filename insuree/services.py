@@ -309,11 +309,22 @@ class InsureeService:
         data['audit_user_id'] = self.user.id_for_audit
         data['validity_from'] = now
         insuree = None
+        passport = data.get('passport')
         status = data.get('status', InsureeStatus.ACTIVE)
         if status not in [choice[0] for choice in InsureeStatus.choices]:
             raise ValidationError(_("mutation.insuree.wrong_status"))
         if InsureeConfig.is_insuree_photo_required and photo_data is None:
             raise ValidationError(_("mutation.insuree.no_required_photo"))
+        # Générer un NIN si manquant
+        if not passport:
+            formatted_nin = ""
+            while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
+                length = random.choice([7, 8])
+                min_nin = 10**(length - 1)
+                max_nin = (10**length) - 1
+                random_nin = random.randint(min_nin, max_nin)
+                formatted_nin = str(random_nin)
+            data["passport"] = formatted_nin
         if status in [InsureeStatus.INACTIVE, InsureeStatus.DEAD]:
             status_reason = InsureeStatusReason.objects.get(code=data.get('status_reason', None),
                                                             validity_to__isnull=True)
@@ -327,24 +338,34 @@ class InsureeService:
             insuree = Insuree.objects.filter(uuid=data["uuid"]).first()
             if not insuree:
                 if InsureeConfig.custom_chif_id:
+                    chfid_total_length = 12
+                    nin = data.get("passport")
+                    random_length = chfid_total_length - len(nin)
+                    if random_length <= 0:
+                        raise ValidationError(_("Le NIN est trop long pour générer un CHFID valide."))
                     min_num = 1
-                    max_num = 99999
+                    max_num = int("9" * random_length)
                     formatted_num = 0
-                    while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
+                    while formatted_num == 0 or Insuree.objects.filter(chf_id=nin + formatted_num).exists():
                         random_num = random.randint(min_num, max_num)
-                        formatted_num = str(random_num).zfill(5)
-                        data["chf_id"] = data["passport"] + str(formatted_num)
+                        formatted_num = str(random_num).zfill(random_length)
+                        data["chf_id"] = str(nin) + str(formatted_num)
                 # insuree = Insuree.objects.create(**data)
             self.activate_policies_of_insuree(insuree, audit_user_id=data['audit_user_id'])
         if "uuid" not in data:
             if InsureeConfig.custom_chif_id:
+                chfid_total_length = 12
+                nin = data.get("passport")
+                random_length = chfid_total_length - len(nin)
+                if random_length <= 0:
+                    raise ValidationError(_("Le NIN est trop long pour générer un CHFID valide."))
                 min_num = 1
-                max_num = 99999
+                max_num = int("9" * random_length)
                 formatted_num = 0
-                while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
+                while formatted_num == 0 or Insuree.objects.filter(chf_id=nin + formatted_num).exists():
                     random_num = random.randint(min_num, max_num)
-                    formatted_num = str(random_num).zfill(5)
-                    data["chf_id"] = data["passport"] + str(formatted_num)
+                    formatted_num = str(random_num).zfill(random_length)
+                    data["chf_id"] = str(nin) + str(formatted_num)
         if InsureeConfig.insuree_fsp_mandatory and 'health_facility_id' not in data:
             raise ValidationError("mutation.insuree.fsp_required")
 
@@ -395,14 +416,31 @@ class InsureeService:
         else:
             if InsureeConfig.custom_chif_id:
                 if insuree.head != True:
+                    
+                    # Générer un NIN si manquant
+                    if not insuree.passport:
+                        formatted_nin = ""
+                        while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
+                            length = random.choice([7, 8])
+                            min_nin = 10**(length - 1)
+                            max_nin = (10**length) - 1
+                            random_nin = random.randint(min_nin, max_nin)
+                            formatted_nin = str(random_nin)
+                        insuree.passport = formatted_nin
+                        
                     if not insuree.chf_id: #Si le CHFID n'a pas deja été généré on genere
                         # Si c'est le head insuree son chfid aura deja été généré grace au NIN de la famille
+                        chfid_total_length = 12
+                        nin = insuree.passport
+                        random_length = chfid_total_length - len(nin)
+                        if random_length <= 0:
+                            raise ValidationError(_("Le NIN est trop long pour générer un CHFID valide."))
                         min_num = 1
-                        max_num = 99999
+                        max_num = int("9" * random_length)
                         formatted_num = 0
-                        while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
+                        while formatted_num == 0 or Insuree.objects.filter(chf_id=nin + formatted_num).exists():
                             random_num = random.randint(min_num, max_num)
-                            formatted_num = str(random_num).zfill(5)
+                            formatted_num = str(random_num).zfill(random_length)
                             insuree.chf_id = str(insuree.passport) + str(formatted_num)
         insuree.save()
         if photo_data:
@@ -504,15 +542,31 @@ class FamilyService:
         
         if head_insuree_data:
             head_insuree_data["head"] = True
+            passport = head_insuree_data.get("passport")
+            # Générer un NIN si manquant
+            if not passport:
+                formatted_nin = ""
+                while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
+                    length = random.choice([7, 8])
+                    min_nin = 10**(length - 1)
+                    max_nin = (10**length) - 1
+                    random_nin = random.randint(min_nin, max_nin)
+                    formatted_nin = str(random_nin)
+                head_insuree_data["passport"] = formatted_nin
             family = Family.objects.filter(uuid=data["uuid"]).first()
             if not family:
                 if InsureeConfig.custom_chif_id:
+                    chfid_total_length = 12
+                    nin = head_insuree_data.get("passport")
+                    random_length = chfid_total_length - len(nin)
+                    if random_length <= 0:
+                        raise ValidationError(_("Le NIN est trop long pour générer un CHFID valide."))
                     min_num = 1
-                    max_num = 99999
+                    max_num = int("9" * random_length)
                     formatted_num = 0
-                    while formatted_num == 0 or Insuree.objects.filter(chf_id=formatted_num).exists():
+                    while formatted_num == 0 or Insuree.objects.filter(chf_id=nin + formatted_num).exists():
                         random_num = random.randint(min_num, max_num)
-                        formatted_num = str(random_num).zfill(5)
+                        formatted_num = str(random_num).zfill(random_length)
                         head_insuree_data["chf_id"] = str(head_insuree_data["passport"]) + str(formatted_num)
             head_insuree = InsureeService(
                 self.user).create_or_update(head_insuree_data)
