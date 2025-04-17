@@ -10,6 +10,7 @@ from graphql import ResolveInfo
 from insuree.apps import InsureeConfig
 from location import models as location_models
 from location.models import LocationManager
+from django.utils import timezone as django_tz
 
 
 class Gender(models.Model):
@@ -430,3 +431,32 @@ class PolicyRenewalDetail(core_models.VersionedModel):
     class Meta:
         managed = True
         db_table = 'tblPolicyRenewalDetails'
+        
+class InsureeAttachment(models.Model):
+    """ Class Attachment :
+    Class for isurees attachments
+    """
+    idAttachment = models.AutoField(
+        primary_key=True, db_column='idAttachment'
+    )
+    folder = models.CharField(db_column='Folder', max_length=250, null=True)
+    filename = models.CharField(db_column='FileName', max_length=250, null=True)
+    title = models.CharField(db_column='Title', max_length=250, null=True)
+    insuree = models.ForeignKey(
+        'Insuree',
+        models.DO_NOTHING,
+        db_column='InsureeID',
+        related_name="attachments"
+    )
+    date = core.fields.DateField(db_column='AttachmentDate',
+        null=True, blank=True
+    )
+    document = models.TextField(blank=False, null=False)
+    mime = models.CharField(db_column='Mime', max_length=250, null=False)
+
+    """ Class Meta :
+    Class Meta to define specific table
+    """
+
+    class Meta:
+        db_table = "tblAttachment"
