@@ -360,6 +360,7 @@ class InsureeService:
                         random_num = random.randint(min_num, max_num)
                         formatted_num = str(random_num).zfill(random_length)
                         data["chf_id"] = str(nin) + str(formatted_num)
+                insuree = Insuree(**data)
                 # insuree = Insuree.objects.create(**data)
             self.activate_policies_of_insuree(insuree, audit_user_id=data['audit_user_id'])
         if "uuid" not in data:

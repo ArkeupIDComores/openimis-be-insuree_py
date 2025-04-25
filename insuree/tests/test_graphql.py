@@ -13,7 +13,7 @@ from graphql_jwt.shortcuts import get_token
 from location.models import Location
 from location.test_helpers import create_test_location, assign_user_districts
 from rest_framework import status
-from insuree.test_helpers import create_test_insuree
+from insuree.test_helpers import create_test_insuree, update_test_insuree
 from location.test_helpers import create_test_location, create_test_health_facility, create_test_village
 from insuree.models import Family
 
@@ -435,3 +435,26 @@ query GetInsureeInquire($chfId: String) {
 
         # This validates the status code and if you get errors
         self.assertResponseNoErrors(response)
+
+    def test_update_insuree_does_not_change_chfid(self):
+    # Create a test insuree with a specific CHFID
+        insuree = create_test_insuree(
+            with_family=True,
+            is_head=False,
+            custom_props={
+                "last_name": "Original",
+                "other_names": "Le Positif",
+                "current_village": self.test_village
+            }
+        )
+
+        # Update the insuree with new properties
+        chfid = insuree.chf_id
+        updated = update_test_insuree(insuree, update_props = {
+            "last_name": "Updated",
+            "marital": "M"
+        })
+
+        # Check that the CHFID remains unchanged and the last name has been updated
+        self.assertEqual(updated.chf_id, chfid)
+        self.assertEqual(updated.last_name, "Updated")
