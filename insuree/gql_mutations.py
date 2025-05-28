@@ -280,6 +280,7 @@ class UpdateInsureeMutation(OpenIMISMutation):
     @classmethod
     def async_mutate(cls, user, **data):
         try:
+            print("data ", data)
             if type(user) is AnonymousUser or not user.id:
                 raise ValidationError(
                     _("mutation.authentication_required"))
