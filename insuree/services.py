@@ -330,7 +330,7 @@ class InsureeService:
         if not passport:
             formatted_nin = ""
             while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
-                length = random.choice([7, 8])
+                length = random.choice([7, 9])
                 min_nin = 10**(length - 1)
                 max_nin = (10**length) - 1
                 random_nin = random.randint(min_nin, max_nin)
@@ -434,7 +434,7 @@ class InsureeService:
                     if not insuree.passport:
                         formatted_nin = ""
                         while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
-                            length = random.choice([7, 8])
+                            length = random.choice([7, 9])
                             min_nin = 10**(length - 1)
                             max_nin = (10**length) - 1
                             random_nin = random.randint(min_nin, max_nin)
@@ -561,7 +561,7 @@ class FamilyService:
             if not passport:
                 formatted_nin = ""
                 while not formatted_nin or Insuree.objects.filter(passport=formatted_nin).exists():
-                    length = random.choice([7, 8])
+                    length = random.choice([7, 9])
                     min_nin = 10**(length - 1)
                     max_nin = (10**length) - 1
                     random_nin = random.randint(min_nin, max_nin)
