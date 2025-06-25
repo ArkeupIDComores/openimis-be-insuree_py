@@ -18,6 +18,8 @@ from location.apps import LocationConfig
 from core.schema import OrderedDjangoFilterConnectionField, OfficerGQLType
 from core.gql_queries import ValidationMessageGQLType
 from policy.models import Policy
+from core.models import Officer, Role, UserRole
+from location.models import UserDistrict
 
 # We do need all queries and mutations in the namespace here.
 from .gql_queries import *  # lgtm [py/polluting-import]
@@ -109,6 +111,7 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
         orderBy=graphene.List(of_type=graphene.String),
     )
     insuree_officers = DjangoFilterConnectionField(OfficerGQLType)
+    contextual_insuree_officers = DjangoFilterConnectionField(OfficerGQLType)
     insuree_policy = OrderedDjangoFilterConnectionField(
         InsureePolicyGQLType,
         parent_location=graphene.String(),
@@ -305,6 +308,36 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
     def resolve_insuree_officers(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_officers_perms):
             raise PermissionDenied(_("unauthorized"))
+       
+    def resolve_contextual_insuree_officers(self, info, **kwargs):
+        if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_officers_perms):
+            raise PermissionDenied(_("unauthorized"))
+
+        user = info.context.user
+        i_user = getattr(user, '_u', None)
+        
+        if i_user:
+            user_roles = UserRole.objects.filter(user_id=i_user.id, validity_to__isnull=True)
+            roles = list(
+                Role.objects.filter(
+                    id__in=user_roles.values_list("role_id", flat=True),
+                    validity_to__isnull=True
+                ).values_list("name", flat=True)
+            )
+            # Si l'utilisateur est un EO
+            if "Enrolment Officer" in roles:
+                return Officer.objects.filter(id=user.officer.id, validity_to__isnull=True)
+            
+            # Utilisateur non-EO
+            user_districts = UserDistrict.get_user_districts(i_user)
+            if user_districts:
+                location_uuids = [d.location.uuid for d in user_districts if d.location]
+                officers = Officer.objects.filter(location__uuid__in=location_uuids, validity_to__isnull=True).distinct()
+                if officers.exists():
+                    return officers
+
+        # Aucun officer trouvé → retourne tous les EOs valides
+        return Officer.objects.filter(validity_to__isnull=True)
 
     def resolve_insuree_policy(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_policy_perms):
