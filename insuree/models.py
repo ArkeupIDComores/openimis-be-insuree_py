@@ -10,6 +10,7 @@ from graphql import ResolveInfo
 from insuree.apps import InsureeConfig
 from location import models as location_models
 from location.models import LocationManager
+from django.utils import timezone as django_tz
 
 
 class Gender(models.Model):
@@ -70,6 +71,13 @@ class FamilyType(models.Model):
         managed = True
         db_table = 'tblFamilyTypes'
 
+class IncomeLevels(models.Model):
+    id  = models.AutoField(db_column='IncomeLevelID', primary_key=True)
+    first_language = models.CharField(db_column='FirstLanguage', max_length=200, blank=True, null=True)
+    second_language = models.CharField(db_column='SecondLanguage', max_length=200, blank=True, null=True)
+    class Meta:
+        managed = True
+        db_table = 'tblIncomeLevels'
 
 class ConfirmationType(models.Model):
     code = models.CharField(
@@ -86,8 +94,27 @@ class ConfirmationType(models.Model):
         managed = True
         db_table = 'tblConfirmationTypes'
 
+class FamilyLevels(models.TextChoices):
+    ONE = "1", "1"
+    TWO = "2", "2"
 
-class Family(core_models.VersionedModel, core_models.ExtendableModel):
+class BaseInsureeFamily(models.Model):
+    coordinates = models.CharField(
+        db_column='Coordinates', max_length=255, blank=True, null=True)
+    preferred_payment_method = models.CharField(
+        db_column='PreferredPaymentMethod', max_length=50, blank=True, null=True)
+    income_level = models.ForeignKey(
+        IncomeLevels, models.DO_NOTHING, db_column='IncomeLevel', blank=True, null=True)
+    professional_situation = models.CharField(
+        db_column='ProfessionalSituation', max_length=255, blank=True, null=True)
+    bank_coordinates = models.CharField(
+        db_column='BankCoordinates', max_length=255, blank=True, null=True)
+    audit_user_id = models.IntegerField(db_column='AuditUserID')
+
+    class Meta:
+        abstract = True
+
+class Family(core_models.VersionedModel, core_models.ExtendableModel, BaseInsureeFamily):
     id = models.AutoField(db_column='FamilyID', primary_key=True)
     uuid = models.CharField(db_column='FamilyUUID',
                             max_length=36, default=uuid.uuid4, unique=True)
@@ -113,9 +140,13 @@ class Family(core_models.VersionedModel, core_models.ExtendableModel):
         ConfirmationType,
         models.DO_NOTHING, db_column='ConfirmationType', blank=True, null=True,
         related_name='families')
-    audit_user_id = models.IntegerField(db_column='AuditUserID')
     # rowid = models.TextField(db_column='RowID', blank=True, null=True)
-
+    parent = models.ForeignKey(
+        'Family', models.DO_NOTHING, db_column='ParentFamily', blank=True, null=True)
+    family_level = models.CharField(db_column='FamilyLevel', choices=FamilyLevels.choices, max_length=1, default=FamilyLevels.ONE)
+    polygamous = models.BooleanField(
+        db_column='PolygamousFamily', blank=True, null=True)
+    
     def __str__(self):
         return str(self.head_insuree)
 
@@ -147,7 +178,6 @@ class Family(core_models.VersionedModel, core_models.ExtendableModel):
     class Meta:
         managed = True
         db_table = 'tblFamilies'
-
 
 class Profession(models.Model):
     id = models.SmallIntegerField(db_column='ProfessionId', primary_key=True)
@@ -216,7 +246,7 @@ class InsureeStatusReason(core_models.VersionedModel):
         db_table = 'tblInsureeStatusReason'
 
 
-class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
+class Insuree(core_models.VersionedModel, core_models.ExtendableModel, BaseInsureeFamily):
     id = models.AutoField(db_column='InsureeID', primary_key=True)
     uuid = models.CharField(db_column='InsureeUUID', max_length=36, default=uuid.uuid4, unique=True)
 
@@ -281,8 +311,7 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel):
     status_date = core.fields.DateField(db_column='status_date', null=True, blank=True)
     status_reason = models.ForeignKey(InsureeStatusReason, models.DO_NOTHING, db_column='StatusReason',
                                       blank=True, null=True, related_name='insurees')
-    audit_user_id = models.IntegerField(db_column='AuditUserID')
-    # row_id = models.BinaryField(db_column='RowID', blank=True, null=True)
+    # row_id = models.BinaryField(db_column='RowID', blank=True, null=True) 
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self
@@ -402,3 +431,32 @@ class PolicyRenewalDetail(core_models.VersionedModel):
     class Meta:
         managed = True
         db_table = 'tblPolicyRenewalDetails'
+        
+class FamilyAttachment(models.Model):
+    """ Class Attachment :
+    Class for families attachments
+    """
+    idAttachment = models.AutoField(
+        primary_key=True, db_column='idAttachment'
+    )
+    folder = models.CharField(db_column='Folder', max_length=250, null=True)
+    filename = models.CharField(db_column='FileName', max_length=250, null=True)
+    title = models.CharField(db_column='Title', max_length=250, null=True)
+    family = models.ForeignKey(
+        'Family',
+        models.DO_NOTHING,
+        db_column='FamilyID',
+        related_name="attachments"
+    )
+    date = core.fields.DateField(db_column='AttachmentDate',
+        null=True, blank=True
+    )
+    document = models.TextField(blank=False, null=False)
+    mime = models.CharField(db_column='Mime', max_length=250, null=False)
+
+    """ Class Meta :
+    Class Meta to define specific table
+    """
+
+    class Meta:
+        db_table = "tblAttachment"

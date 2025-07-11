@@ -13,7 +13,7 @@ from graphql_jwt.shortcuts import get_token
 from location.models import Location
 from location.test_helpers import create_test_location, assign_user_districts
 from rest_framework import status
-from insuree.test_helpers import create_test_insuree
+from insuree.test_helpers import create_test_insuree, update_test_insuree
 from location.test_helpers import create_test_location, create_test_health_facility, create_test_village
 from insuree.models import Family
 
@@ -39,6 +39,15 @@ class InsureeGQLTestCase(openIMISGraphQLTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        
+        # Créer les districts nécessaires
+        district_codes = ["R1D1", "R2D1", "R2D2"]
+        for code in district_codes:
+            create_test_location(
+                loc_type="D",
+                custom_props={"code": code}
+            )
+    
         cls.test_village = create_test_village()
         cls.test_insuree = create_test_insuree(with_family=True, is_head=True, custom_props={'current_village':cls.test_village}, family_custom_props={'location':cls.test_village})
         cls.admin_user = create_test_interactive_user(username="testLocationAdmin")
@@ -122,7 +131,7 @@ class InsureeGQLTestCase(openIMISGraphQLTestCase):
     {
       node
       {
-        id,uuid,poverty,confirmationNo,validityFrom,validityTo,headInsuree{id,uuid,chfId,lastName,otherNames,email,phone, dob},location{id, uuid, code, name, type, parent{id,uuid,code,name,type,parent{id,uuid,code,name,type,parent{id,uuid,code,name,type}}}}
+        id,uuid,poverty,confirmationNo,validityFrom,validityTo,headInsuree{id,uuid,chfId,lastName,otherNames,email,phone, dob},location{id, uuid, code, name, type, parent{id,uuid,code,name,type,parent{id,uuid,code,name,type,parent{id,uuid,code,name,type}}}},attachments {idAttachment, folder, title, mime, filename, date, document}
       }
     }
       }
@@ -242,6 +251,7 @@ class InsureeGQLTestCase(openIMISGraphQLTestCase):
     def test_create_family(self):
       muuid='50f8f2c9-7685-4cd5-a7d8-b1fa78d46470'
       fuuid='50f8f2c9-7685-4cd5-a770-b1fa34d46470'
+      attachment_base64 = "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAAA1BMVEW10NBjBBbqAAAAH0lEQVRoge3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAvg0hAAABmmDh1QAAAABJRU5ErkJggg=="
       response = self.query(f'''
     mutation {{
       createFamily(
@@ -269,6 +279,16 @@ class InsureeGQLTestCase(openIMISGraphQLTestCase):
     poverty: false
     uuid: "{fuuid}"
     jsonExt: "{{}}"
+    attachments: [
+      {{
+        folder: "family_docs"
+        title: "CNI"
+        mime: "application/pdf"
+        filename: "cni.pdf"
+        date: "2025-04-28"
+        document: "{attachment_base64}"
+      }}
+    ]
         }}
       ) {{
         clientMutationId
@@ -313,6 +333,16 @@ class InsureeGQLTestCase(openIMISGraphQLTestCase):
     poverty: true
     uuid: "{fuuid}"
     jsonExt: "{{}}"
+    attachments: [
+      {{
+        folder: "family_docs"
+        title: "CNI"
+        mime: "application/pdf"
+        filename: "cni.pdf"
+        date: "2025-04-28"
+        document: "{attachment_base64}"
+      }}
+    ]
         }}
       ) {{
         clientMutationId
@@ -435,3 +465,26 @@ query GetInsureeInquire($chfId: String) {
 
         # This validates the status code and if you get errors
         self.assertResponseNoErrors(response)
+
+    def test_update_insuree_does_not_change_chfid(self):
+    # Create a test insuree with a specific CHFID
+        insuree = create_test_insuree(
+            with_family=True,
+            is_head=False,
+            custom_props={
+                "last_name": "Original",
+                "other_names": "Le Positif",
+                "current_village": self.test_village
+            }
+        )
+
+        # Update the insuree with new properties
+        chfid = insuree.chf_id
+        updated = update_test_insuree(insuree, update_props = {
+            "last_name": "Updated",
+            "marital": "M"
+        })
+
+        # Check that the CHFID remains unchanged and the last name has been updated
+        self.assertEqual(updated.chf_id, chfid)
+        self.assertEqual(updated.last_name, "Updated")

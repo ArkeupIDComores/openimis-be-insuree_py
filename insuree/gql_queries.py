@@ -2,8 +2,9 @@ import graphene
 from graphene_django import DjangoObjectType
 
 from .apps import InsureeConfig
-from .models import Insuree, InsureePhoto, Education, Profession, Gender, IdentificationType, \
-    Family, FamilyType, ConfirmationType, Relation, InsureePolicy, FamilyMutation, InsureeMutation, InsureeStatusReason
+from .models import Insuree, InsureePhoto, FamilyAttachment, Education, Profession, Gender, IdentificationType, \
+    Family, FamilyType, ConfirmationType, Relation, InsureePolicy, FamilyMutation, InsureeMutation,\
+         InsureeStatusReason, IncomeLevels
 from location.schema import LocationGQLType
 from policy.gql_queries import PolicyGQLType
 from core import prefix_filterset, filter_validity, ExtendedConnection
@@ -39,6 +40,30 @@ class PhotoGQLType(DjangoObjectType):
             "id": ["exact"]
         }
 
+class AttachmentGQLType(DjangoObjectType):
+    document = graphene.String()
+
+    def resolve_attachment(self, info):
+        if self.document:
+            return self.document
+        elif InsureeConfig.insuree_photos_root_path and self.folder and self.filename:
+            return load_photo_file(self.folder, self.filename)
+        return None
+
+    class Meta:
+        model = FamilyAttachment
+        filter_fields = {
+            "id": ["exact"]
+        }
+class IncomeLevelsGQLType(DjangoObjectType):
+
+    class Meta:
+        model = IncomeLevels
+        interfaces = (graphene.relay.Node,)
+        filter_fields = {
+            "id":["exact"]
+        }
+        connection_class = ExtendedConnection
 
 class IdentificationTypeGQLType(DjangoObjectType):
     class Meta:
@@ -202,6 +227,8 @@ class FamilyGQLType(DjangoObjectType):
             "address": ["exact", "istartswith", "icontains", "iexact"],
             "ethnicity": ["exact"],
             "is_offline": ["exact"],
+            "parent__id": ["exact"],
+            "parent__uuid": ["exact"],
             **prefix_filterset("location__", LocationGQLType._meta.filter_fields),
             **prefix_filterset("head_insuree__", InsureeGQLType._meta.filter_fields),
             **prefix_filterset("members__", InsureeGQLType._meta.filter_fields)
