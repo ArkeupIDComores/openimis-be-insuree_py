@@ -150,6 +150,11 @@ def reset_insuree_before_update(insuree):
     insuree.type_of_id = None
     insuree.health_facility = None
     insuree.offline = None
+    insuree.types_habitation = None
+    insuree.maladie_invalidante_non = None
+    insuree.handicap_non = None
+    insuree.couverture_assurance_mutuelle = None
+    insuree.milieu_de_residence = None
     insuree.json_ext = None
 
 
@@ -381,10 +386,14 @@ class InsureeService:
         if InsureeConfig.insuree_fsp_mandatory and 'health_facility_id' not in data:
             raise ValidationError("mutation.insuree.fsp_required")
 
+        # Traitement des champs avant création ou mise à jour
+        processed_data = self._map_fields(data)
+        
         if not insuree:
-            insuree = Insuree(**data)
+            insuree = Insuree(**processed_data)
         else:
-            self._update(insuree, data)
+            self._update(insuree, processed_data)
+            
         return self._create_or_update(insuree, photo_data)
 
     def disable_policies_of_insuree(self, insuree, status_date):
@@ -495,12 +504,86 @@ class InsureeService:
                     'detail': insuree.uuid}]
             }
 
+    def _map_fields(self, data):
+        """
+        Mappe les alias de champs du frontend vers les noms de champs du modèle
+        et convertit les valeurs de chaîne en entiers pour les champs d'ID
+        """
+        # Mapping des alias camelCase vers les noms de champs snake_case
+        field_mapping = {
+            'typeHabitationId': 'types_habitation_id',
+            'couvertureAssuranceId': 'couverture_assurance_mutuelle_id',
+            'handicapId': 'handicap_non_id',
+            'maladieInvalidanteId': 'maladie_invalidante_non_id',
+            'milieuDeResidenceId': 'milieu_de_residence_id',
+            # Ajout des correspondances inverses pour la cohérence
+            'types_habitation_id': 'types_habitation_id',
+            'couverture_assurance_mutuelle_id': 'couverture_assurance_mutuelle_id',
+            'handicap_non_id': 'handicap_non_id',
+            'maladie_invalidante_non_id': 'maladie_invalidante_non_id',
+            'milieu_de_residence_id': 'milieu_de_residence_id'
+        }
+        
+        # Copie des données pour éviter de modifier l'original
+        processed_data = {}
+        
+        # Traitement initial des champs
+        for key, value in data.items():
+            # Si le champ est dans le mapping, on utilise le nom du champ cible
+            if key in field_mapping:
+                target_field = field_mapping[key]
+                # On ne remplace que si la valeur n'est pas None
+                if value is not None or target_field not in processed_data:
+                    processed_data[target_field] = value
+            else:
+                # Pour les champs non mappés, on les laisse tels quels
+                processed_data[key] = value
+        
+        # Liste des champs qui doivent être des entiers
+        int_fields = [
+            'milieu_de_residence_id', 'types_habitation_id', 
+            'couverture_assurance_mutuelle_id', 'handicap_non_id',
+            'maladie_invalidante_non_id', 'family_id', 'profession_id',
+            'education_id', 'health_facility_id', 'income_level_id'
+        ]
+        
+        # Conversion des valeurs en entiers pour les champs d'ID
+        for field in int_fields:
+            if field in processed_data and processed_data[field] is not None:
+                try:
+                    value = processed_data[field]
+                    
+                    # Si c'est une chaîne vide, on met à None
+                    if isinstance(value, str) and value.strip() == '':
+                        processed_data[field] = None
+                    # Sinon on essaie de convertir en entier
+                    elif value is not None and value != '':
+                        # Si c'est déjà un entier, on le laisse tel quel
+                        if isinstance(value, int):
+                            continue
+                        # Sinon on essaie de convertir
+                        try:
+                            processed_data[field] = int(value)
+                        except (ValueError, TypeError):
+                            # Si la conversion échoue, on laisse la valeur d'origine
+                            pass
+                except Exception as e:
+                    logger.warning(f"Error processing {field}: {e}")
+        
+        return processed_data
+
     def _update(self, insuree, data):
         insuree.save_history()
         # reset the non required fields
         # (each update is 'complete', necessary to be able to set 'null')
         reset_insuree_before_update(insuree)
-        [setattr(insuree, key, data[key]) for key in data]
+        
+        # Traitement des champs
+        processed_data = self._map_fields(data)
+        
+        # Mise à jour des attributs
+        for key, value in processed_data.items():
+            setattr(insuree, key, value)
     
     def cancel_policies(self, insuree):
         try:

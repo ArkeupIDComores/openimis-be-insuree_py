@@ -246,6 +246,61 @@ class InsureeStatusReason(core_models.VersionedModel):
         db_table = 'tblInsureeStatusReason'
 
 
+class Maladieinvalidante_Non(models.Model):
+    code = models.IntegerField(db_column='Code', primary_key=True)
+    MaladieInvalidanteNon = models.CharField(db_column='MaladieInvalidanteNon', max_length=100, blank=True, null=True)
+    alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
+    sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'tblMaladieinvalidante_Non'
+
+
+class Handicap_Non(models.Model):
+    code = models.IntegerField(db_column='Code', primary_key=True)
+    HandicapNon = models.CharField(db_column='HandicapNon', max_length=100, blank=True, null=True)
+    alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
+    sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'tblHandicap_Non'
+
+
+class CouvertureAssuranceMutuelle(models.Model):
+    code = models.IntegerField(db_column='Code', primary_key=True)
+    CouvertureAssuranceMutuelle = models.CharField(db_column='CouvertureAssuranceMutuelle', max_length=150, blank=True, null=True)
+    alt_language = models.CharField(db_column='AltLanguage', max_length=150, blank=True, null=True)
+    sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'tblCouvertureAssuranceMutuelle'
+
+
+class TypesHabitation(models.Model):
+    code = models.IntegerField(db_column='Code', primary_key=True)
+    TypesHabitation = models.CharField(db_column='TypesDhabitation', max_length=150, blank=True, null=True)
+    alt_language = models.CharField(db_column='AltLanguage', max_length=150, blank=True, null=True)
+    sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'tblTypesHabitation'
+
+
+class Milieuderesidence(models.Model):
+    code = models.IntegerField(db_column='Code', primary_key=True)
+    Milieuderesidence = models.CharField(db_column='MilieuDeResidence', max_length=100, blank=True, null=True)
+    alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
+    sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'tblMilieuderesidence'
+
+
 class Insuree(core_models.VersionedModel, core_models.ExtendableModel, BaseInsureeFamily):
     id = models.AutoField(db_column='InsureeID', primary_key=True)
     uuid = models.CharField(db_column='InsureeUUID', max_length=36, default=uuid.uuid4, unique=True)
@@ -312,6 +367,15 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel, BaseInsur
     status_reason = models.ForeignKey(InsureeStatusReason, models.DO_NOTHING, db_column='StatusReason',
                                       blank=True, null=True, related_name='insurees')
     # row_id = models.BinaryField(db_column='RowID', blank=True, null=True) 
+
+    types_habitation = models.ForeignKey(TypesHabitation, models.DO_NOTHING, db_column='TypesHabitation', blank=True, null=True)
+    maladie_invalidante_non = models.ForeignKey(Maladieinvalidante_Non, models.DO_NOTHING, db_column='MaladieInvalidante', blank=True, null=True)
+
+    handicap_non = models.ForeignKey(Handicap_Non, models.DO_NOTHING, db_column='HandicapNon', blank=True, null=True)
+
+    couverture_assurance_mutuelle = models.ForeignKey(CouvertureAssuranceMutuelle, models.DO_NOTHING, db_column='CouvertureAssuranceMutuelle', blank=True, null=True)
+
+    milieu_de_residence = models.ForeignKey(Milieuderesidence, models.DO_NOTHING, db_column='MilieuDeResidence', blank=True, null=True)
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self

@@ -4,7 +4,7 @@ from graphene_django import DjangoObjectType
 from .apps import InsureeConfig
 from .models import Insuree, InsureePhoto, FamilyAttachment, Education, Profession, Gender, IdentificationType, \
     Family, FamilyType, ConfirmationType, Relation, InsureePolicy, FamilyMutation, InsureeMutation,\
-         InsureeStatusReason, IncomeLevels
+         InsureeStatusReason, IncomeLevels, Maladieinvalidante_Non, Handicap_Non, CouvertureAssuranceMutuelle, TypesHabitation, Milieuderesidence
 from location.schema import LocationGQLType
 from policy.gql_queries import PolicyGQLType
 from core import prefix_filterset, filter_validity, ExtendedConnection
@@ -129,10 +129,66 @@ class InsureeStatusReasonGQLType(DjangoObjectType):
         connection_class = ExtendedConnection
 
 
+class MaladieInvalidanteNonGQLType(DjangoObjectType):
+    class Meta:
+        model = Maladieinvalidante_Non
+        filter_fields = {"code": ["exact"], "MaladieInvalidanteNon": ["icontains"]}
+        interfaces = (graphene.relay.Node,)
+
+
+class HandicapNonGQLType(DjangoObjectType):
+    class Meta:
+        model = Handicap_Non
+        filter_fields = {"code": ["exact"], "HandicapNon": ["icontains"]}
+        interfaces = (graphene.relay.Node,)
+
+
+class CouvertureAssuranceMutuelleGQLType(DjangoObjectType):
+    class Meta:
+        model = CouvertureAssuranceMutuelle
+        filter_fields = {"code": ["exact"], "CouvertureAssuranceMutuelle": ["icontains"]}
+        interfaces = (graphene.relay.Node,)
+
+
+class TypesHabitationGQLType(DjangoObjectType):
+    class Meta:
+        model = TypesHabitation
+        filter_fields = {"code": ["exact"], "TypesHabitation": ["icontains"]}
+        interfaces = (graphene.relay.Node,)
+
+
+class MilieuDeResidenceGQLType(DjangoObjectType):
+    class Meta:
+        model = Milieuderesidence
+        filter_fields = {"code": ["exact"], "Milieuderesidence": ["icontains"]}
+        interfaces = (graphene.relay.Node,)
+
+
 class InsureeGQLType(DjangoObjectType):
     age = graphene.Int(source='age')
     client_mutation_id = graphene.String()
     photo = PhotoGQLType()
+
+    maladieInvalidanteNon = graphene.Field(MaladieInvalidanteNonGQLType)
+    handicapNon = graphene.Field(HandicapNonGQLType)
+    couvertureAssuranceMutuelle = graphene.Field(CouvertureAssuranceMutuelleGQLType)
+    typesHabitation = graphene.Field(TypesHabitationGQLType)
+    milieuDeResidence = graphene.Field(MilieuDeResidenceGQLType)
+
+    def resolve_maladieInvalidanteNon(self, info):
+        return self.maladie_invalidante_non
+
+    def resolve_handicapNon(self, info):
+        return self.handicap_non
+
+    def resolve_couvertureAssuranceMutuelle(self, info):
+        return self.couverture_assurance_mutuelle
+
+    def resolve_typesHabitation(self, info):
+        return self.types_habitation
+
+    def resolve_milieuDeResidence(self, info):
+        return self.milieu_de_residence
 
     def resolve_current_village(self, info):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_perms):
