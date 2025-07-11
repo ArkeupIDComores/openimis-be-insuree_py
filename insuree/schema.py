@@ -110,7 +110,8 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
         family_uuid=graphene.String(required=True),
         orderBy=graphene.List(of_type=graphene.String),
     )
-    insuree_officers = DjangoFilterConnectionField(OfficerGQLType) 
+    insuree_officers = DjangoFilterConnectionField(OfficerGQLType)
+    contextual_insuree_officers = DjangoFilterConnectionField(OfficerGQLType)
     insuree_policy = OrderedDjangoFilterConnectionField(
         InsureePolicyGQLType,
         parent_location=graphene.String(),
@@ -123,6 +124,30 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
         insuree_number=graphene.String(required=True),
         description="Checks that the specified insuree number is valid"
     )
+
+    maladieInvalidanteNonOptions = graphene.List(MaladieInvalidanteNonGQLType)
+    handicapNonOptions = graphene.List(HandicapNonGQLType)
+    couvertureAssuranceMutuelleOptions = graphene.List(CouvertureAssuranceMutuelleGQLType)
+    typesHabitationOptions = graphene.List(TypesHabitationGQLType)
+    milieuDeResidenceOptions = graphene.List(MilieuDeResidenceGQLType)
+
+
+    def resolve_maladieInvalidanteNonOptions(self, info, **kwargs):
+        return Maladieinvalidante_Non.objects.all()
+
+    def resolve_handicapNonOptions(self, info, **kwargs):
+        return Handicap_Non.objects.all()
+
+    def resolve_couvertureAssuranceMutuelleOptions(self, info, **kwargs):
+        return CouvertureAssuranceMutuelle.objects.all()
+
+    def resolve_typesHabitationOptions(self, info, **kwargs):
+        return TypesHabitation.objects.all()
+
+    def resolve_milieuDeResidenceOptions(self, info, **kwargs):
+        return Milieuderesidence.objects.all()
+
+
 
     def resolve_insuree_number_validity(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insurees_perms):
@@ -307,10 +332,41 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
     def resolve_insuree_officers(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_officers_perms):
             raise PermissionDenied(_("unauthorized"))
-        
         if InsureeConfig.use_contextual_enrolment_officer_selection:
             return _get_contextual_insuree_officers(info, **kwargs)
-       
+        
+
+
+    def resolve_contextual_insuree_officers(self, info, **kwargs):
+        if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_officers_perms):
+            raise PermissionDenied(_("unauthorized"))
+
+        user = info.context.user
+        i_user = getattr(user, '_u', None)
+        
+        if i_user:
+            user_roles = UserRole.objects.filter(user_id=i_user.id, validity_to__isnull=True)
+            roles = list(
+                Role.objects.filter(
+                    id__in=user_roles.values_list("role_id", flat=True),
+                    validity_to__isnull=True
+                ).values_list("name", flat=True)
+            )
+            # Si l'utilisateur est un EO
+            if "Enrolment Officer" in roles:
+                return Officer.objects.filter(id=user.officer.id, validity_to__isnull=True)
+            
+            # Utilisateur non-EO
+            user_districts = UserDistrict.get_user_districts(i_user)
+            if user_districts:
+                location_uuids = [d.location.uuid for d in user_districts if d.location]
+                officers = Officer.objects.filter(location__uuid__in=location_uuids, validity_to__isnull=True).distinct()
+                if officers.exists():
+                    return officers
+
+        # Aucun officer trouvé → retourne tous les EOs valides
+        return Officer.objects.filter(validity_to__isnull=True)
+
     def resolve_insuree_policy(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_policy_perms):
             raise PermissionDenied(_("unauthorized"))

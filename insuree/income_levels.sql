@@ -1,4 +1,4 @@
-INSERT INTO tblIncomeLevels (FrenchVersion, EnglishVersion) VALUES
+INSERT INTO tblIncomeLevels (FirstLangage, SecondLangage) VALUES
 ('Néant', 'Nothing'),
 ('<30 000', '<30 000'),
 ('30 000-40 000', '30 000-40 000'),
