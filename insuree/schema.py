@@ -125,28 +125,26 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
         description="Checks that the specified insuree number is valid"
     )
 
-    maladieInvalidanteNonOptions = graphene.List(MaladieInvalidanteNonGQLType)
-    handicapNonOptions = graphene.List(HandicapNonGQLType)
-    couvertureAssuranceMutuelleOptions = graphene.List(CouvertureAssuranceMutuelleGQLType)
-    typesHabitationOptions = graphene.List(TypesHabitationGQLType)
-    milieuDeResidenceOptions = graphene.List(MilieuDeResidenceGQLType)
+    noDisabilityOptions = graphene.List(NoDisabilityGQLType)
+    nonDisablingDiseaseOptions = graphene.List(NondisablingDiseaseGQLType)
+    mutualInsuranceCoverageOptions = graphene.List(MutualInsuranceCoverageGQLType)
+    housingTypeOptions = graphene.List(HousingTypeGQLType)
+    residenceEnvironmentOptions = graphene.List(ResidenceEnvironmentGQLType)
 
+    def resolve_noDisabilityOptions(self, info, **kwargs):
+        return NoDisability.objects.all()
 
-    def resolve_maladieInvalidanteNonOptions(self, info, **kwargs):
-        return Maladieinvalidante_Non.objects.all()
+    def resolve_nonDisablingDiseaseOptions(self, info, **kwargs):
+        return NonDisablingDisease.objects.all()
 
-    def resolve_handicapNonOptions(self, info, **kwargs):
-        return Handicap_Non.objects.all()
+    def resolve_mutualInsuranceCoverageOptions(self, info, **kwargs):
+        return MutualInsuranceCoverage.objects.all()
 
-    def resolve_couvertureAssuranceMutuelleOptions(self, info, **kwargs):
-        return CouvertureAssuranceMutuelle.objects.all()
+    def resolve_housingTypeOptions(self, info, **kwargs):
+        return HousingType.objects.all()
 
-    def resolve_typesHabitationOptions(self, info, **kwargs):
-        return TypesHabitation.objects.all()
-
-    def resolve_milieuDeResidenceOptions(self, info, **kwargs):
-        return Milieuderesidence.objects.all()
-
+    def resolve_residenceEnvironmentOptions(self, info, **kwargs):
+        return ResidenceEnvironment.objects.all()
 
 
     def resolve_insuree_number_validity(self, info, **kwargs):

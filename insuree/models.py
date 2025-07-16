@@ -245,60 +245,59 @@ class InsureeStatusReason(core_models.VersionedModel):
         managed = True
         db_table = 'tblInsureeStatusReason'
 
-
-class Maladieinvalidante_Non(models.Model):
+class NonDisablingDisease(models.Model):
     code = models.IntegerField(db_column='Code', primary_key=True)
-    MaladieInvalidanteNon = models.CharField(db_column='MaladieInvalidanteNon', max_length=100, blank=True, null=True)
+    non_disabling_disease = models.CharField(db_column='NonDisablingDisease', max_length=100, blank=True, null=True)
     alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
     sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
 
     class Meta:
         managed = True
-        db_table = 'tblMaladieinvalidante_Non'
+        db_table = 'tblNonDisablingDisease'
 
 
-class Handicap_Non(models.Model):
+class NoDisability(models.Model):
     code = models.IntegerField(db_column='Code', primary_key=True)
-    HandicapNon = models.CharField(db_column='HandicapNon', max_length=100, blank=True, null=True)
+    no_disability_label = models.CharField(db_column='NoDisabilityLabel', max_length=100, blank=True, null=True)
     alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
     sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
 
     class Meta:
         managed = True
-        db_table = 'tblHandicap_Non'
+        db_table = 'tblNoDisability'
 
 
-class CouvertureAssuranceMutuelle(models.Model):
+class MutualInsuranceCoverage(models.Model):
     code = models.IntegerField(db_column='Code', primary_key=True)
-    CouvertureAssuranceMutuelle = models.CharField(db_column='CouvertureAssuranceMutuelle', max_length=150, blank=True, null=True)
+    mutual_insurance_coverage = models.CharField(db_column='MutualInsuranceCoverage', max_length=150, blank=True, null=True)
     alt_language = models.CharField(db_column='AltLanguage', max_length=150, blank=True, null=True)
     sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
 
     class Meta:
         managed = True
-        db_table = 'tblCouvertureAssuranceMutuelle'
+        db_table = 'tblMutualInsuranceCoverage'
 
 
-class TypesHabitation(models.Model):
+class HousingType(models.Model):
     code = models.IntegerField(db_column='Code', primary_key=True)
-    TypesHabitation = models.CharField(db_column='TypesDhabitation', max_length=150, blank=True, null=True)
+    housing_type = models.CharField(db_column='HousingType', max_length=150, blank=True, null=True)
     alt_language = models.CharField(db_column='AltLanguage', max_length=150, blank=True, null=True)
     sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
 
     class Meta:
         managed = True
-        db_table = 'tblTypesHabitation'
+        db_table = 'tblHousingType'
 
 
-class Milieuderesidence(models.Model):
+class ResidenceEnvironment(models.Model):
     code = models.IntegerField(db_column='Code', primary_key=True)
-    Milieuderesidence = models.CharField(db_column='MilieuDeResidence', max_length=100, blank=True, null=True)
+    residence_environment = models.CharField(db_column='ResidenceEnvironment', max_length=100, blank=True, null=True)
     alt_language = models.CharField(db_column='AltLanguage', max_length=100, blank=True, null=True)
     sort_order = models.IntegerField(db_column='SortOrder', blank=True, null=True)
 
     class Meta:
         managed = True
-        db_table = 'tblMilieuderesidence'
+        db_table = 'tblResidenceEnvironment'
 
 
 class Insuree(core_models.VersionedModel, core_models.ExtendableModel, BaseInsureeFamily):
@@ -368,14 +367,12 @@ class Insuree(core_models.VersionedModel, core_models.ExtendableModel, BaseInsur
                                       blank=True, null=True, related_name='insurees')
     # row_id = models.BinaryField(db_column='RowID', blank=True, null=True) 
 
-    types_habitation = models.ForeignKey(TypesHabitation, models.DO_NOTHING, db_column='TypesHabitation', blank=True, null=True)
-    maladie_invalidante_non = models.ForeignKey(Maladieinvalidante_Non, models.DO_NOTHING, db_column='MaladieInvalidante', blank=True, null=True)
+    housing_type = models.ForeignKey(HousingType, models.DO_NOTHING, db_column='HousingType', blank=True, null=True)
+    non_disabling_disease = models.ForeignKey(NonDisablingDisease, models.DO_NOTHING, db_column='NonDisablingDisease', blank=True, null=True)
+    no_disability = models.ForeignKey(NoDisability, models.DO_NOTHING, db_column='NoDisability', blank=True, null=True)
+    mutual_insurance_coverage = models.ForeignKey(MutualInsuranceCoverage, models.DO_NOTHING, db_column='MutualInsuranceCoverage', blank=True, null=True)
+    residence_environment = models.ForeignKey(ResidenceEnvironment, models.DO_NOTHING, db_column='ResidenceEnvironment', blank=True, null=True)
 
-    handicap_non = models.ForeignKey(Handicap_Non, models.DO_NOTHING, db_column='HandicapNon', blank=True, null=True)
-
-    couverture_assurance_mutuelle = models.ForeignKey(CouvertureAssuranceMutuelle, models.DO_NOTHING, db_column='CouvertureAssuranceMutuelle', blank=True, null=True)
-
-    milieu_de_residence = models.ForeignKey(Milieuderesidence, models.DO_NOTHING, db_column='MilieuDeResidence', blank=True, null=True)
 
     def is_head_of_family(self):
         return self.family and self.family.head_insuree == self
