@@ -15,29 +15,7 @@ from .models import Family, Insuree, FamilyMutation, InsureeMutation
 
 logger = logging.getLogger(__name__)
 
-class StringOrInt(graphene.Scalar):
-    """
-    Scalar personnalisé qui accepte à la fois les chaînes et les entiers.
-    """
-    @staticmethod
-    def serialize(value):
-        return str(value) if value is not None else None
 
-    @staticmethod
-    def parse_literal(node):
-        from graphql.language.ast import StringValue, IntValue
-        if isinstance(node, StringValue):
-            return node.value
-        elif isinstance(node, IntValue):
-            return int(node.value)
-        return None
-
-    @staticmethod
-    def parse_value(value):
-        # Convertit les entiers en chaînes pour la cohérence
-        if isinstance(value, int):
-            return str(value)
-        return value
 
 class PhotoInputType(InputObjectType):
     id = graphene.Int(required=False, read_only=True)
@@ -94,19 +72,11 @@ class InsureeBase:
     professional_situation = graphene.String(max_length=255, required=False)
     bank_coordinates = graphene.String(max_length=255, required=False)
     # Champs principaux en snake_case
-    milieu_de_residence_id = graphene.String(required=False)
-    types_habitation_id = graphene.String(required=False)
-    couverture_assurance_mutuelle_id = graphene.String(required=False)
-    handicap_non_id = graphene.String(required=False)
-    maladie_invalidante_non_id = graphene.String(required=False)
-    
-    # Alias pour la compatibilité avec le frontend (camelCase)
-    # Utilisation de StringOrInt pour accepter à la fois les entiers et les chaînes
-    typeHabitationId = StringOrInt(required=False)
-    couvertureAssuranceId = StringOrInt(required=False)
-    handicapId = StringOrInt(required=False)
-    maladieInvalidanteId = StringOrInt(required=False)
-    milieuDeResidenceId = StringOrInt(required=False)
+    residence_environment_id = graphene.Int(required=True)   # anciennement milieu_de_residence_id
+    housing_type_id = graphene.Int(required=True)            # anciennement types_habitation_id
+    mutual_insurance_coverage_id = graphene.Int(required=True)  # anciennement couverture_assurance_mutuelle_id
+    no_disability_id = graphene.Int(required=True)            # anciennement handicap_non_id
+    non_disabling_disease_id = graphene.Int(required=True)    
 
 
 class CreateInsureeInputType(InsureeBase, OpenIMISMutation.Input):
