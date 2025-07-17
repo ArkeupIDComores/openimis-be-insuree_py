@@ -4,7 +4,7 @@ from graphene_django import DjangoObjectType
 from .apps import InsureeConfig
 from .models import Insuree, InsureePhoto, FamilyAttachment, Education, Profession, Gender, IdentificationType, \
     Family, FamilyType, ConfirmationType, Relation, InsureePolicy, FamilyMutation, InsureeMutation,\
-         InsureeStatusReason, IncomeLevels, Maladieinvalidante_Non, Handicap_Non, CouvertureAssuranceMutuelle, TypesHabitation, Milieuderesidence
+         InsureeStatusReason, IncomeLevels,NoDisability, NonDisablingDisease, MutualInsuranceCoverage, HousingType, ResidenceEnvironment
 from location.schema import LocationGQLType
 from policy.gql_queries import PolicyGQLType
 from core import prefix_filterset, filter_validity, ExtendedConnection
@@ -129,66 +129,80 @@ class InsureeStatusReasonGQLType(DjangoObjectType):
         connection_class = ExtendedConnection
 
 
-class MaladieInvalidanteNonGQLType(DjangoObjectType):
+class NoDisabilityGQLType(DjangoObjectType):
     class Meta:
-        model = Maladieinvalidante_Non
-        filter_fields = {"code": ["exact"], "MaladieInvalidanteNon": ["icontains"]}
+        model = NoDisability
+        filter_fields = {
+            "code": ["exact"],
+            "no_disability_label": ["icontains"],
+        }
         interfaces = (graphene.relay.Node,)
 
 
-class HandicapNonGQLType(DjangoObjectType):
+class NondisablingDiseaseGQLType(DjangoObjectType):
     class Meta:
-        model = Handicap_Non
-        filter_fields = {"code": ["exact"], "HandicapNon": ["icontains"]}
+        model = NonDisablingDisease
+        filter_fields = {
+            "code": ["exact"],
+            "non_disabling_disease": ["icontains"],
+        }
         interfaces = (graphene.relay.Node,)
 
 
-class CouvertureAssuranceMutuelleGQLType(DjangoObjectType):
+class MutualInsuranceCoverageGQLType(DjangoObjectType):
     class Meta:
-        model = CouvertureAssuranceMutuelle
-        filter_fields = {"code": ["exact"], "CouvertureAssuranceMutuelle": ["icontains"]}
+        model = MutualInsuranceCoverage
+        filter_fields = {
+            "code": ["exact"],
+            "mutual_insurance_coverage": ["icontains"],
+        }
         interfaces = (graphene.relay.Node,)
 
 
-class TypesHabitationGQLType(DjangoObjectType):
+class HousingTypeGQLType(DjangoObjectType):
     class Meta:
-        model = TypesHabitation
-        filter_fields = {"code": ["exact"], "TypesHabitation": ["icontains"]}
+        model = HousingType
+        filter_fields = {
+            "code": ["exact"],
+            "housing_type": ["icontains"],
+        }
         interfaces = (graphene.relay.Node,)
 
 
-class MilieuDeResidenceGQLType(DjangoObjectType):
+class ResidenceEnvironmentGQLType(DjangoObjectType):
     class Meta:
-        model = Milieuderesidence
-        filter_fields = {"code": ["exact"], "Milieuderesidence": ["icontains"]}
+        model = ResidenceEnvironment
+        filter_fields = {
+            "code": ["exact"],
+            "residence_environment": ["icontains"],
+        }
         interfaces = (graphene.relay.Node,)
-
 
 class InsureeGQLType(DjangoObjectType):
     age = graphene.Int(source='age')
     client_mutation_id = graphene.String()
     photo = PhotoGQLType()
 
-    maladieInvalidanteNon = graphene.Field(MaladieInvalidanteNonGQLType)
-    handicapNon = graphene.Field(HandicapNonGQLType)
-    couvertureAssuranceMutuelle = graphene.Field(CouvertureAssuranceMutuelleGQLType)
-    typesHabitation = graphene.Field(TypesHabitationGQLType)
-    milieuDeResidence = graphene.Field(MilieuDeResidenceGQLType)
+    noDisability = graphene.Field(NoDisabilityGQLType)
+    nonDisablingDisease = graphene.Field(NondisablingDiseaseGQLType)
+    mutualInsuranceCoverage = graphene.Field(MutualInsuranceCoverageGQLType)
+    housingType = graphene.Field(HousingTypeGQLType)
+    residenceEnvironment = graphene.Field(ResidenceEnvironmentGQLType)
 
-    def resolve_maladieInvalidanteNon(self, info):
-        return self.maladie_invalidante_non
+    def resolve_noDisability(self, info):
+        return self.no_disability
 
-    def resolve_handicapNon(self, info):
-        return self.handicap_non
+    def resolve_nonDisablingDisease(self, info):
+        return self.non_disabling_disease
 
-    def resolve_couvertureAssuranceMutuelle(self, info):
-        return self.couverture_assurance_mutuelle
+    def resolve_mutualInsuranceCoverage(self, info):
+        return self.mutual_insurance_coverage
 
-    def resolve_typesHabitation(self, info):
-        return self.types_habitation
+    def resolve_housingType(self, info):
+        return self.housing_type
 
-    def resolve_milieuDeResidence(self, info):
-        return self.milieu_de_residence
+    def resolve_residenceEnvironment(self, info):
+        return self.residence_environment
 
     def resolve_current_village(self, info):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_perms):
