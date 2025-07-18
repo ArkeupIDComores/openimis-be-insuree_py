@@ -19,19 +19,18 @@ VALUES
 INSERT INTO public."tblNoDisability" ("Code", "NoDisabilityLabel", "AltLanguage", "SortOrder")
 VALUES
     (1, 'Without disability', 'Sans handicap', 1),
-    (0, 'With disability', 'Avec handicap', 0);
+    (2, 'With disability', 'Avec handicap', 2);
 
 
 INSERT INTO public."tblNonDisablingDisease" ("Code", "NonDisablingDisease", "AltLanguage", "SortOrder")
 VALUES
     (1, 'Without disabling disease', 'Sans maladie invalidante', 1),
-    (0, 'With disabling disease', 'Avec maladie invalidante', 0);
+    (2, 'With disabling disease', 'Avec maladie invalidante', 2);
 
 INSERT INTO public."tblMutualInsuranceCoverage" ("Code", "MutualInsuranceCoverage", "AltLanguage", "SortOrder")
 VALUES
-    (1, 'With health insurance or mutual coverage', 'Avec une couverture en assurance maladie ou mutuelle de santé', 1),
-    (0, 'Without health insurance or mutual coverage', 'Sans couverture en assurance maladie', 0);
-
+    (1, 'Without health insurance or mutual coverage', 'Sans couverture en assurance maladie', 1),
+    (2, 'With health insurance or mutual coverage', 'Avec une couverture en assurance maladie ou mutuelle de santé', 2);
 
 INSERT INTO public."tblHousingType" ("Code", "HousingType", "AltLanguage", "SortOrder")
 VALUES
