@@ -512,10 +512,13 @@ def _get_contextual_insuree_officers(info, location_id=None, **kwargs):
             # If the user is an Enrolment Officer (EO)
             if "Enrolment Officer" in roles:
                 return Officer.objects.filter(id=user.officer.id, validity_to__isnull=True)
+            
             # Non-EO user
             if location_id:
                 officers = Officer.objects.filter(officer_villages__location__id=location_id, validity_to__isnull=True)
+
                 if officers.exists():
                     return officers
+
         # No officers found → return all valid EOs
         return Officer.objects.filter(validity_to__isnull=True)
