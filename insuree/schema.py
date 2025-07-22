@@ -340,6 +340,36 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
             return _get_contextual_insuree_officers(info, location_id=location_id, **kwargs)
         
 
+def resolve_insuree_policy(self, info, **kwargs):
+        if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_policy_perms):
+            raise PermissionDenied(_("unauthorized"))
+        filters = []
+        additional_filter = kwargs.get('additional_filter', None)
+        # go to process additional filter only when this arg of filter was passed into query
+        if additional_filter:
+            filters_from_signal = _insuree_additional_filters(
+                sender=self, additional_filter=additional_filter, user=info.context.user
+            )
+            # check if there is filter from signal (perms will be checked in the signals)
+            if len(filters_from_signal) == 0:
+                raise PermissionDenied(_("unauthorized"))
+            filters.extend(filters_from_signal)
+        if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_policy_perms):
+            raise PermissionDenied(_("unauthorized"))
+        parent_location = kwargs.get('parent_location')
+        if parent_location is not None:
+            parent_location_level = kwargs.get('parent_location_level')
+            if parent_location_level is None:
+                raise NotImplementedError(
+                    "Missing parentLocationLevel argument when filtering on parentLocation")
+            f = "uuid"
+            for i in range(len(LocationConfig.location_types) - parent_location_level - 1):
+                f = "parent__" + f
+            current_village = "insuree__current_village__" + f
+            family_location = "insuree__family__location__" + f
+            filters += [(Q(insuree__current_village__isnull=False) & Q(**{current_village: parent_location})) |
+                        (Q(insuree__current_village__isnull=True) & Q(**{family_location: parent_location}))]
+        return gql_optimizer.query(InsureePolicy.objects.filter(*filters).all(), info)
 
 
 class Mutation(graphene.ObjectType):
