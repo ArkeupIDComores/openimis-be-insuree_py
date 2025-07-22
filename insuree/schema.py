@@ -112,8 +112,8 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
     )
     
     insuree_officers = DjangoFilterConnectionField(
-          OfficerGQLType,
-          location_id=graphene.String()
+        OfficerGQLType,
+        location_id=graphene.String()
     ) 
 
     insuree_policy = OrderedDjangoFilterConnectionField(
@@ -516,7 +516,6 @@ def _get_contextual_insuree_officers(info, location_id=None, **kwargs):
             # Non-EO user
             if location_id:
                 officers = Officer.objects.filter(officer_villages__location__id=location_id, validity_to__isnull=True)
-
                 if officers.exists():
                     return officers
         # No officers found → return all valid EOs
