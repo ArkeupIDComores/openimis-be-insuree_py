@@ -137,6 +137,8 @@ class NoDisabilityGQLType(DjangoObjectType):
             "no_disability_label": ["icontains"],
         }
         interfaces = (graphene.relay.Node,)
+        connection_class = ExtendedConnection
+
 
 
 class NondisablingDiseaseGQLType(DjangoObjectType):
@@ -147,6 +149,7 @@ class NondisablingDiseaseGQLType(DjangoObjectType):
             "non_disabling_disease": ["icontains"],
         }
         interfaces = (graphene.relay.Node,)
+        connection_class = ExtendedConnection
 
 
 class MutualInsuranceCoverageGQLType(DjangoObjectType):
@@ -157,6 +160,8 @@ class MutualInsuranceCoverageGQLType(DjangoObjectType):
             "mutual_insurance_coverage": ["icontains"],
         }
         interfaces = (graphene.relay.Node,)
+        connection_class = ExtendedConnection
+
 
 
 class HousingTypeGQLType(DjangoObjectType):
@@ -167,6 +172,7 @@ class HousingTypeGQLType(DjangoObjectType):
             "housing_type": ["icontains"],
         }
         interfaces = (graphene.relay.Node,)
+        connection_class = ExtendedConnection
 
 
 class ResidenceEnvironmentGQLType(DjangoObjectType):
@@ -177,6 +183,8 @@ class ResidenceEnvironmentGQLType(DjangoObjectType):
             "residence_environment": ["icontains"],
         }
         interfaces = (graphene.relay.Node,)
+        connection_class = ExtendedConnection
+
 
 class InsureeGQLType(DjangoObjectType):
     age = graphene.Int(source='age')

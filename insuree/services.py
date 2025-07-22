@@ -388,7 +388,6 @@ class InsureeService:
         if InsureeConfig.insuree_fsp_mandatory and 'health_facility_id' not in data:
             raise ValidationError("mutation.insuree.fsp_required")
 
-        # Traitement des champs avant création ou mise à jour
         
         if not insuree:
             insuree = Insuree(**data)

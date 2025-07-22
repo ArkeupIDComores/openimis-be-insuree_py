@@ -71,11 +71,10 @@ class InsureeBase:
     income_level_id = graphene.Int(required=False)
     professional_situation = graphene.String(max_length=255, required=False)
     bank_coordinates = graphene.String(max_length=255, required=False)
-    # Champs principaux en snake_case
-    residence_environment_id = graphene.Int(required=True)   # anciennement milieu_de_residence_id
-    housing_type_id = graphene.Int(required=True)            # anciennement types_habitation_id
-    mutual_insurance_coverage_id = graphene.Int(required=True)  # anciennement couverture_assurance_mutuelle_id
-    no_disability_id = graphene.Int(required=True)            # anciennement handicap_non_id
+    residence_environment_id = graphene.Int(required=True)   
+    housing_type_id = graphene.Int(required=True)            
+    mutual_insurance_coverage_id = graphene.Int(required=True)  
+    no_disability_id = graphene.Int(required=True)            
     non_disabling_disease_id = graphene.Int(required=True)    
 
 
