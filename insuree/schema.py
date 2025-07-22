@@ -338,7 +338,6 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
           
             return _get_contextual_insuree_officers(info, location_id=location_id, **kwargs)
         
-
 def resolve_insuree_policy(self, info, **kwargs):
         if not info.context.user.has_perms(InsureeConfig.gql_query_insuree_policy_perms):
             raise PermissionDenied(_("unauthorized"))
