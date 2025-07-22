@@ -114,8 +114,7 @@ class Query(ExportableQueryMixin, graphene.ObjectType):
     insuree_officers = DjangoFilterConnectionField(
           OfficerGQLType,
           location_id=graphene.String()
-      ) 
-    contextual_insuree_officers = DjangoFilterConnectionField(OfficerGQLType)
+    ) 
 
     insuree_policy = OrderedDjangoFilterConnectionField(
         InsureePolicyGQLType,
