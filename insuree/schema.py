@@ -521,4 +521,3 @@ def _get_contextual_insuree_officers(info, location_id=None, **kwargs):
 
         # No officers found → return all valid EOs
         return Officer.objects.filter(validity_to__isnull=True)
-        #space versus tabulation comparaison
